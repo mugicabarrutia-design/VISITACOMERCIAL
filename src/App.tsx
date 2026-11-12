@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataProvider, useData } from './context/DataContext';
 import { Navigation, TabKey } from './components/Navigation';
 import { CalendarioPage } from './pages/CalendarioPage';
 import { VisitasPage } from './pages/VisitasPage';
 import { ClientesPage } from './pages/ClientesPage';
+import { MapaClientesPage } from './pages/MapaClientesPage';
 import { ArticulosPage } from './pages/ArticulosPage';
 import { VentasPage } from './pages/VentasPage';
 import { ComercialesPage } from './pages/ComercialesPage';
@@ -20,6 +21,15 @@ import { Database, Plus, Sparkles, Loader2, CheckCircle2, AlertTriangle } from '
 const AppContent: React.FC = () => {
   const { loading, isLiveSupabase, needToRunSchemaSql, isDatabaseEmpty, sembrarDatosEnSupabase } = useData();
   const [currentTab, setCurrentTab] = useState<TabKey>('calendario');
+
+  // Quota status for Google Maps
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+
+  useEffect(() => {
+    const handleQuotaExceeded = () => setQuotaExceeded(true);
+    window.addEventListener('gmp-quota-exceeded', handleQuotaExceeded);
+    return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
+  }, []);
 
   // Modales globales
   const [globalVisitaModalOpen, setGlobalVisitaModalOpen] = useState(false);
@@ -37,6 +47,22 @@ const AppContent: React.FC = () => {
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {quotaExceeded && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
+            <span>
+              Google Maps Platform quota reached. If you are the app owner, visit{' '}
+              <a
+                href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold text-amber-950 hover:text-amber-800"
+              >
+                maps developer site
+              </a>{' '}
+              for instructions to update your account.
+            </span>
+          </div>
+        )}
         {/* Header Bar */}
         <header className="hidden lg:flex items-center justify-between px-8 py-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs">
@@ -131,6 +157,7 @@ const AppContent: React.FC = () => {
               {currentTab === 'calendario' && <CalendarioPage />}
               {currentTab === 'visitas' && <VisitasPage />}
               {currentTab === 'clientes' && <ClientesPage />}
+              {currentTab === 'mapa' && <MapaClientesPage />}
               {currentTab === 'articulos' && <ArticulosPage />}
               {currentTab === 'ventas' && <VentasPage />}
               {currentTab === 'comerciales' && <ComercialesPage />}

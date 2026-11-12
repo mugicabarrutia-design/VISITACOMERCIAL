@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Calendar, CheckSquare, Users, Briefcase, Plus, Database, Menu, X, Sparkles, Package, ShoppingCart } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Briefcase, Plus, Database, Menu, X, Sparkles, Package, ShoppingCart, MapPin } from 'lucide-react';
 
-export type TabKey = 'calendario' | 'visitas' | 'clientes' | 'articulos' | 'ventas' | 'comerciales';
+export type TabKey = 'calendario' | 'visitas' | 'clientes' | 'mapa' | 'articulos' | 'ventas' | 'comerciales';
 
 interface NavigationProps {
   currentTab: TabKey;
@@ -37,6 +37,12 @@ export const Navigation: React.FC<NavigationProps> = ({
       key: 'clientes' as TabKey,
       label: 'Clientes',
       icon: Users,
+      badge: clientes.length,
+    },
+    {
+      key: 'mapa' as TabKey,
+      label: 'Mapa Clientes',
+      icon: MapPin,
       badge: clientes.length,
     },
     {
