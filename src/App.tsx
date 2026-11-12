@@ -12,6 +12,7 @@ import { ClientesPage } from './pages/ClientesPage';
 import { MapaClientesPage } from './pages/MapaClientesPage';
 import { ArticulosPage } from './pages/ArticulosPage';
 import { VentasPage } from './pages/VentasPage';
+import { EstadisticasVentasPage } from './pages/EstadisticasVentasPage';
 import { ComercialesPage } from './pages/ComercialesPage';
 import { VisitaModal } from './components/VisitaModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
@@ -160,6 +161,7 @@ const AppContent: React.FC = () => {
               {currentTab === 'mapa' && <MapaClientesPage />}
               {currentTab === 'articulos' && <ArticulosPage />}
               {currentTab === 'ventas' && <VentasPage />}
+              {currentTab === 'estadisticas' && <EstadisticasVentasPage />}
               {currentTab === 'comerciales' && <ComercialesPage />}
             </>
           )}
