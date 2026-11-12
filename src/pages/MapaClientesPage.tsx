@@ -280,10 +280,18 @@ export const MapaClientesPage: React.FC = () => {
                     <React.Fragment key={cli.codigo || cli.id}>
                       <AdvancedMarker
                         position={cli.coords}
-                        title={`${cli.nombre_empresa} (${cli.codigo})`}
+                        title={`${cli.nombre_empresa} (${cli.codigo}) - Clic: ventas | Doble clic: abrir ficha`}
                         onClick={() => handleSelectCliente(cli)}
                       >
-                        <div className={`group relative cursor-pointer transition-all transform hover:scale-110 ${isSelected ? 'scale-125 z-30' : 'z-10'}`}>
+                        <div
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setClienteParaDetalle(cli);
+                            setDetalleModalOpen(true);
+                          }}
+                          className={`group relative cursor-pointer transition-all transform hover:scale-110 ${isSelected ? 'scale-125 z-30' : 'z-10'}`}
+                          title="Clic: Seleccionar | Doble clic: Abrir ficha completa"
+                        >
                           <Pin
                             background={color}
                             borderColor="#ffffff"
@@ -300,15 +308,34 @@ export const MapaClientesPage: React.FC = () => {
                           position={cli.coords}
                           onCloseClick={() => setSelectedClienteId(null)}
                         >
-                          <div className="p-1 max-w-xs text-slate-900 dark:text-slate-100">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-mono font-bold text-[10px]">
-                              {cli.codigo}
-                            </span>
-                            <h4 className="font-bold text-sm mt-1">{cli.nombre_empresa}</h4>
+                          <div
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setClienteParaDetalle(cli);
+                              setDetalleModalOpen(true);
+                            }}
+                            className="p-1 max-w-xs text-slate-900 dark:text-slate-100 cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-mono font-bold text-[10px]">
+                                {cli.codigo}
+                              </span>
+                              <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">Doble clic para ficha</span>
+                            </div>
+                            <h4 className="font-bold text-sm mt-1 hover:text-blue-600 transition-colors">{cli.nombre_empresa}</h4>
                             <p className="text-xs text-slate-500">{cli.ciudad || cli.poblacion}, {cli.pais}</p>
-                            <p className="text-xs text-slate-600 font-medium mt-1">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">
                               Contacto: {cli.persona_contacto}
                             </p>
+                            <button
+                              onClick={() => {
+                                setClienteParaDetalle(cli);
+                                setDetalleModalOpen(true);
+                              }}
+                              className="mt-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Ver Ficha Completa
+                            </button>
                           </div>
                         </InfoWindow>
                       )}
@@ -512,6 +539,11 @@ export const MapaClientesPage: React.FC = () => {
               <div
                 key={cli.codigo || cli.id}
                 onClick={() => handleSelectCliente(cli)}
+                onDoubleClick={() => {
+                  setClienteParaDetalle(cli);
+                  setDetalleModalOpen(true);
+                }}
+                title="Clic: Seleccionar en el mapa | Doble clic: Abrir ficha completa del cliente"
                 className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                   isSelected
                     ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 shadow-md ring-2 ring-blue-500/20'
