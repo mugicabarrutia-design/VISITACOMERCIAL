@@ -9,14 +9,16 @@ import { Navigation, TabKey } from './components/Navigation';
 import { CalendarioPage } from './pages/CalendarioPage';
 import { VisitasPage } from './pages/VisitasPage';
 import { ClientesPage } from './pages/ClientesPage';
+import { ArticulosPage } from './pages/ArticulosPage';
+import { VentasPage } from './pages/VentasPage';
 import { ComercialesPage } from './pages/ComercialesPage';
 import { VisitaModal } from './components/VisitaModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { ToastContainer } from './components/ToastContainer';
-import { Database, Plus, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { Database, Plus, Sparkles, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { loading, isLiveSupabase } = useData();
+  const { loading, isLiveSupabase, needToRunSchemaSql, isDatabaseEmpty, sembrarDatosEnSupabase } = useData();
   const [currentTab, setCurrentTab] = useState<TabKey>('calendario');
 
   // Modales globales
@@ -76,7 +78,49 @@ const AppContent: React.FC = () => {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-4">
+          {/* Banner si las tablas aún no están creadas en Supabase */}
+          {needToRunSchemaSql && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-sm">Supabase Conectado: Ejecuta el script SQL para crear las tablas</p>
+                  <p className="text-amber-800 dark:text-amber-300 mt-0.5">
+                    Tu proyecto Supabase está vinculado. Para sincronizar en tu base de datos, ejecuta <code>supabase/schema.sql</code> en el SQL Editor de tu consola Supabase.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSupabaseModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shrink-0 shadow-xs transition-colors self-start sm:self-auto"
+              >
+                Copiar SQL / Ver Instrucciones
+              </button>
+            </div>
+          )}
+
+          {/* Banner si la base de datos está vacía */}
+          {isLiveSupabase && !needToRunSchemaSql && isDatabaseEmpty && (
+            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-sm">Base de datos Supabase conectada y lista</p>
+                  <p className="text-blue-800 dark:text-blue-300 mt-0.5">
+                    Tus tablas están creadas pero actualmente no tienen registros. Puedes empezar a crear clientes y visitas o sembrar los 3 comerciales, 8 clientes y 10 visitas de ejemplo con un solo clic.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => sembrarDatosEnSupabase()}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shrink-0 shadow-xs transition-colors self-start sm:self-auto"
+              >
+                Sembrar datos de ejemplo en Supabase
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="h-96 flex flex-col items-center justify-center gap-3 text-slate-400">
               <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -87,6 +131,8 @@ const AppContent: React.FC = () => {
               {currentTab === 'calendario' && <CalendarioPage />}
               {currentTab === 'visitas' && <VisitasPage />}
               {currentTab === 'clientes' && <ClientesPage />}
+              {currentTab === 'articulos' && <ArticulosPage />}
+              {currentTab === 'ventas' && <VentasPage />}
               {currentTab === 'comerciales' && <ComercialesPage />}
             </>
           )}

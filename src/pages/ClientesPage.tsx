@@ -17,11 +17,13 @@ import {
   Edit,
   Trash2,
   Eye,
-  FileText
+  FileText,
+  ShoppingCart
 } from 'lucide-react';
+import { formatEuro } from '../lib/parsers';
 
 export const ClientesPage: React.FC = () => {
-  const { clientesConDetalle, comerciales, visitas, eliminarCliente } = useData();
+  const { clientesConDetalle, comerciales, visitas, ventas, eliminarCliente } = useData();
 
   const [busqueda, setBusqueda] = useState('');
   const [filtroComercial, setFiltroComercial] = useState('');
@@ -40,11 +42,12 @@ export const ClientesPage: React.FC = () => {
 
   const [clienteAEliminar, setClienteAEliminar] = useState<Cliente | null>(null);
 
-  // Lista de sectores únicos para el filtro
+  // Lista de sectores o países únicos para el filtro
   const sectores = useMemo(() => {
     const set = new Set<string>();
     clientesConDetalle.forEach((c) => {
-      if (c.sector) set.add(c.sector);
+      if (c.pais) set.add(c.pais);
+      else if (c.sector) set.add(c.sector);
     });
     return Array.from(set).sort();
   }, [clientesConDetalle]);
@@ -56,12 +59,16 @@ export const ClientesPage: React.FC = () => {
         const q = busqueda.toLowerCase();
         const match =
           c.nombre_empresa.toLowerCase().includes(q) ||
-          c.cif.toLowerCase().includes(q) ||
-          c.persona_contacto.toLowerCase().includes(q) ||
-          c.poblacion.toLowerCase().includes(q) ||
-          c.provincia.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.sector.toLowerCase().includes(q);
+          (c.codigo && c.codigo.toLowerCase().includes(q)) ||
+          (c.cif && c.cif.toLowerCase().includes(q)) ||
+          (c.persona_contacto && c.persona_contacto.toLowerCase().includes(q)) ||
+          (c.cargo && c.cargo.toLowerCase().includes(q)) ||
+          (c.ciudad && c.ciudad.toLowerCase().includes(q)) ||
+          (c.poblacion && c.poblacion.toLowerCase().includes(q)) ||
+          (c.pais && c.pais.toLowerCase().includes(q)) ||
+          (c.provincia && c.provincia.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.sector && c.sector.toLowerCase().includes(q));
         if (!match) return false;
       }
 
@@ -69,7 +76,7 @@ export const ClientesPage: React.FC = () => {
         return false;
       }
 
-      if (filtroSector && c.sector !== filtroSector) {
+      if (filtroSector && c.pais !== filtroSector && c.sector !== filtroSector) {
         return false;
       }
 
@@ -85,6 +92,19 @@ export const ClientesPage: React.FC = () => {
     });
     return map;
   }, [visitas]);
+
+  // Facturación y pedidos por cliente (desde tabla ventas)
+  const ventasPorCliente = useMemo(() => {
+    const map = new Map<string, { pedidos: number; total: number }>();
+    ventas.forEach((v) => {
+      const prev = map.get(v.id_cliente) || { pedidos: 0, total: 0 };
+      map.set(v.id_cliente, {
+        pedidos: prev.pedidos + 1,
+        total: prev.total + (v.importe || 0),
+      });
+    });
+    return map;
+  }, [ventas]);
 
   return (
     <div className="space-y-4">
@@ -181,6 +201,7 @@ export const ClientesPage: React.FC = () => {
           clientesFiltrados.map((cliente) => {
             const numVisitas = visitasPorCliente.get(cliente.id) || 0;
             const comercial = cliente.comercial_asignado;
+            const ventasStats = ventasPorCliente.get(cliente.codigo || cliente.id);
 
             return (
               <div
@@ -191,18 +212,19 @@ export const ClientesPage: React.FC = () => {
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900">
+                          {cliente.codigo}
+                        </span>
+                        {cliente.pais && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {cliente.pais}
+                          </span>
+                        )}
+                      </div>
                       <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
                         {cliente.nombre_empresa}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {cliente.cif}
-                        </span>
-                        <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs text-slate-500 truncate max-w-[150px]">
-                          {cliente.sector}
-                        </span>
-                      </div>
                     </div>
 
                     <button
@@ -211,37 +233,56 @@ export const ClientesPage: React.FC = () => {
                         setDetalleModalOpen(true);
                       }}
                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl transition-colors shrink-0"
-                      title="Ver ficha completa"
+                      title="Ver ficha completa e historial de compras"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Contact Info */}
-                  <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 mb-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-medium truncate">{cliente.persona_contacto}</span>
+                      <span className="font-medium truncate">
+                        {cliente.persona_contacto}
+                        {cliente.cargo && <span className="text-slate-400 font-normal"> ({cliente.cargo})</span>}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <a href={`tel:${cliente.telefono}`} className="text-blue-600 hover:underline">
-                        {cliente.telefono}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <a href={`mailto:${cliente.email}`} className="text-blue-600 hover:underline truncate">
-                        {cliente.email}
-                      </a>
-                    </div>
+                    {cliente.telefono && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <a href={`tel:${cliente.telefono}`} className="text-blue-600 hover:underline">
+                          {cliente.telefono}
+                        </a>
+                      </div>
+                    )}
+                    {cliente.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <a href={`mailto:${cliente.email}`} className="text-blue-600 hover:underline truncate">
+                          {cliente.email}
+                        </a>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="truncate">
-                        {cliente.poblacion} ({cliente.provincia})
+                        {cliente.ciudad || cliente.poblacion}
+                        {cliente.direccion ? ` • ${cliente.direccion}` : ''}
                       </span>
                     </div>
                   </div>
+
+                  {/* Ventas asociadas si tiene pedidos */}
+                  {ventasStats && ventasStats.pedidos > 0 && (
+                    <div className="flex items-center justify-between text-xs mb-3 px-3 py-1.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <ShoppingCart className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        {ventasStats.pedidos} {ventasStats.pedidos === 1 ? 'pedido' : 'pedidos'}
+                      </span>
+                      <span className="font-bold">{formatEuro(ventasStats.total)}</span>
+                    </div>
+                  )}
 
                   {/* Comercial Asignado */}
                   <div className="flex items-center justify-between text-xs mb-3">

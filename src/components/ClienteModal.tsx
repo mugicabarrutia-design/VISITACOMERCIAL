@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Cliente } from '../types';
 import { ConfirmModal } from './ConfirmModal';
-import { X, Building2, User, Phone, Mail, MapPin, Briefcase, FileText, Trash2 } from 'lucide-react';
+import { X, Building2, User, Phone, Mail, MapPin, Briefcase, FileText, Trash2, Globe, Tag } from 'lucide-react';
 
 interface ClienteModalProps {
   isOpen: boolean;
@@ -15,17 +15,20 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
   onClose,
   clienteParaEditar,
 }) => {
-  const { comerciales, crearCliente, actualizarCliente, eliminarCliente, addToast } = useData();
+  const { clientes, comerciales, crearCliente, actualizarCliente, eliminarCliente, addToast } = useData();
 
+  const [codigo, setCodigo] = useState('');
   const [nombreEmpresa, setNombreEmpresa] = useState('');
   const [cif, setCif] = useState('');
   const [personaContacto, setPersonaContacto] = useState('');
+  const [cargo, setCargo] = useState('');
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [poblacion, setPoblacion] = useState('');
   const [provincia, setProvincia] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
+  const [pais, setPais] = useState('España');
   const [sector, setSector] = useState('');
   const [comercialAsignadoId, setComercialAsignadoId] = useState('');
   const [notas, setNotas] = useState('');
@@ -38,56 +41,60 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
     if (isOpen) {
       setErrores({});
       if (clienteParaEditar) {
-        setNombreEmpresa(clienteParaEditar.nombre_empresa);
-        setCif(clienteParaEditar.cif);
-        setPersonaContacto(clienteParaEditar.persona_contacto);
-        setTelefono(clienteParaEditar.telefono);
-        setEmail(clienteParaEditar.email);
-        setDireccion(clienteParaEditar.direccion);
-        setPoblacion(clienteParaEditar.poblacion);
-        setProvincia(clienteParaEditar.provincia);
-        setCodigoPostal(clienteParaEditar.codigo_postal);
-        setSector(clienteParaEditar.sector);
+        setCodigo(clienteParaEditar.codigo || clienteParaEditar.id || '');
+        setNombreEmpresa(clienteParaEditar.nombre_empresa || clienteParaEditar.Cliente || '');
+        setCif(clienteParaEditar.cif || clienteParaEditar.codigo || '');
+        setPersonaContacto(clienteParaEditar.persona_contacto || clienteParaEditar.Contacto || '');
+        setCargo(clienteParaEditar.cargo || clienteParaEditar.Cargo || '');
+        setTelefono(clienteParaEditar.telefono || clienteParaEditar.Teléfono || '');
+        setEmail(clienteParaEditar.email || '');
+        setDireccion(clienteParaEditar.direccion || clienteParaEditar.Dirección || '');
+        setPoblacion(clienteParaEditar.ciudad || clienteParaEditar.poblacion || clienteParaEditar.Ciudad || '');
+        setProvincia(clienteParaEditar.provincia || '');
+        setCodigoPostal(clienteParaEditar.codigo_postal || clienteParaEditar.CodPost || '');
+        setPais(clienteParaEditar.pais || clienteParaEditar.País || 'España');
+        setSector(clienteParaEditar.sector || '');
         setComercialAsignadoId(clienteParaEditar.comercial_asignado_id || '');
         setNotas(clienteParaEditar.notas || '');
       } else {
+        const nextNum = clientes.length + 1;
+        setCodigo(`c${nextNum}`);
         setNombreEmpresa('');
         setCif('');
         setPersonaContacto('');
+        setCargo('');
         setTelefono('');
         setEmail('');
         setDireccion('');
         setPoblacion('');
         setProvincia('');
         setCodigoPostal('');
+        setPais('España');
         setSector('');
         setComercialAsignadoId(comerciales[0]?.id || '');
         setNotas('');
       }
     }
-  }, [isOpen, clienteParaEditar, comerciales]);
+  }, [isOpen, clienteParaEditar, comerciales, clientes.length]);
 
   const validar = (): boolean => {
     const err: Record<string, string> = {};
 
-    if (!nombreEmpresa.trim()) err.nombreEmpresa = 'El nombre de la empresa es obligatorio';
-    if (!cif.trim()) err.cif = 'El CIF/NIF es obligatorio';
+    if (!codigo.trim()) err.codigo = 'El código identificador es obligatorio (ej. c1, c10)';
+    if (!nombreEmpresa.trim()) err.nombreEmpresa = 'El nombre del cliente/empresa es obligatorio';
     if (!personaContacto.trim()) err.personaContacto = 'Indica una persona de contacto';
     if (!telefono.trim()) err.telefono = 'El teléfono es obligatorio';
-    
-    // Validación de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      err.email = 'El correo electrónico es obligatorio';
-    } else if (!emailRegex.test(email.trim())) {
-      err.email = 'Introduce un formato de correo electrónico válido (ej. info@empresa.com)';
+
+    // Email es opcional en la tabla importada pero si se especifica debe ser válido
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        err.email = 'Introduce un formato de correo electrónico válido (ej. contacto@empresa.com)';
+      }
     }
 
-    if (!direccion.trim()) err.direccion = 'La dirección es obligatoria';
-    if (!poblacion.trim()) err.poblacion = 'La población es obligatoria';
-    if (!provincia.trim()) err.provincia = 'La provincia es obligatoria';
-    if (!codigoPostal.trim()) err.codigoPostal = 'El código postal es obligatorio';
-    if (!sector.trim()) err.sector = 'El sector de actividad es obligatorio';
+    if (!poblacion.trim()) err.poblacion = 'La ciudad/población es obligatoria';
+    if (!pais.trim()) err.pais = 'El país es obligatorio';
 
     setErrores(err);
     return Object.keys(err).length === 0;
@@ -99,23 +106,37 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
 
     setSubmitting(true);
     try {
-      const payload = {
+      const cod = codigo.trim();
+      const payload: Partial<Cliente> = {
+        codigo: cod,
+        id: cod,
         nombre_empresa: nombreEmpresa.trim(),
-        cif: cif.trim().toUpperCase(),
+        Cliente: nombreEmpresa.trim(),
         persona_contacto: personaContacto.trim(),
+        Contacto: personaContacto.trim(),
+        cargo: cargo.trim(),
+        Cargo: cargo.trim(),
         telefono: telefono.trim(),
+        Teléfono: telefono.trim(),
         email: email.trim().toLowerCase(),
         direccion: direccion.trim(),
+        Dirección: direccion.trim(),
+        ciudad: poblacion.trim(),
+        Ciudad: poblacion.trim(),
         poblacion: poblacion.trim(),
-        provincia: provincia.trim(),
+        provincia: provincia.trim() || poblacion.trim(),
         codigo_postal: codigoPostal.trim(),
-        sector: sector.trim(),
+        CodPost: codigoPostal.trim(),
+        pais: pais.trim(),
+        País: pais.trim(),
+        cif: (cif.trim() || cod).toUpperCase(),
+        sector: sector.trim() || cargo.trim() || pais.trim(),
         comercial_asignado_id: comercialAsignadoId || null,
         notas: notas.trim() || undefined,
       };
 
       if (clienteParaEditar) {
-        const ok = await actualizarCliente(clienteParaEditar.id, payload);
+        const ok = await actualizarCliente(clienteParaEditar.codigo || clienteParaEditar.id, payload);
         if (ok) onClose();
       } else {
         const nuevo = await crearCliente(payload);
@@ -131,7 +152,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
   const handleEliminar = async () => {
     if (!clienteParaEditar) return;
     setSubmitting(true);
-    const ok = await eliminarCliente(clienteParaEditar.id);
+    const ok = await eliminarCliente(clienteParaEditar.codigo || clienteParaEditar.id);
     setSubmitting(false);
     if (ok) onClose();
   };
@@ -153,7 +174,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                   {clienteParaEditar ? 'Editar Ficha de Cliente' : 'Registrar Nuevo Cliente'}
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {clienteParaEditar ? 'Actualiza los datos fiscales y de contacto' : 'Añade una nueva cuenta a la cartera'}
+                  {clienteParaEditar ? `Código: ${clienteParaEditar.codigo}` : 'Añade una cuenta a la tabla clientes de Supabase'}
                 </p>
               </div>
             </div>
@@ -166,15 +187,36 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4.5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+            {/* Código y Nombre */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Nombre de la Empresa *
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5 text-blue-500" />
+                    Código *
+                  </span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej. Industrias Metálicas S.A."
+                  placeholder="c92"
+                  value={codigo}
+                  disabled={Boolean(clienteParaEditar)}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    clienteParaEditar ? 'opacity-70 cursor-not-allowed' : ''
+                  } ${errores.codigo ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'}`}
+                />
+                {errores.codigo && <p className="text-xs text-rose-500 mt-1">{errores.codigo}</p>}
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                  Nombre del Cliente / Empresa *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Alfreds Futterkiste"
                   value={nombreEmpresa}
                   onChange={(e) => setNombreEmpresa(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -183,24 +225,9 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                 />
                 {errores.nombreEmpresa && <p className="text-xs text-rose-500 mt-1">{errores.nombreEmpresa}</p>}
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  CIF / NIF *
-                </label>
-                <input
-                  type="text"
-                  placeholder="B12345678"
-                  value={cif}
-                  onChange={(e) => setCif(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errores.cif ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
-                  }`}
-                />
-                {errores.cif && <p className="text-xs text-rose-500 mt-1">{errores.cif}</p>}
-              </div>
             </div>
 
+            {/* Contacto y Cargo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
@@ -211,7 +238,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej. Carmen Rodríguez (Directora Compras)"
+                  placeholder="Ej. Maria Anders"
                   value={personaContacto}
                   onChange={(e) => setPersonaContacto(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -225,22 +252,20 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                   <span className="flex items-center gap-1">
                     <Briefcase className="w-3.5 h-3.5 text-blue-500" />
-                    Sector de Actividad *
+                    Cargo / Puesto
                   </span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej. Hostelería, Tecnología, Salud..."
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errores.sector ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
-                  }`}
+                  placeholder="Ej. Representante de ventas, Propietario..."
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {errores.sector && <p className="text-xs text-rose-500 mt-1">{errores.sector}</p>}
               </div>
             </div>
 
+            {/* Teléfono y Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
@@ -251,7 +276,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                 </label>
                 <input
                   type="tel"
-                  placeholder="+34 912 345 678"
+                  placeholder="030-0074321"
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -265,12 +290,12 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                   <span className="flex items-center gap-1">
                     <Mail className="w-3.5 h-3.5 text-blue-500" />
-                    Correo Electrónico *
+                    Correo Electrónico
                   </span>
                 </label>
                 <input
                   type="email"
-                  placeholder="contacto@empresa.es"
+                  placeholder="maria@empresa.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -281,33 +306,32 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
               </div>
             </div>
 
+            {/* Dirección */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                  Dirección *
+                  Dirección
                 </span>
               </label>
               <input
                 type="text"
-                placeholder="Calle, Avenida o Polígono y número"
+                placeholder="Obere Str. 57"
                 value={direccion}
                 onChange={(e) => setDireccion(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errores.direccion ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
-                }`}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.direccion && <p className="text-xs text-rose-500 mt-1">{errores.direccion}</p>}
             </div>
 
+            {/* Ciudad, País, Código Postal */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Población *
+                  Ciudad *
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej. Madrid"
+                  placeholder="Berlín"
                   value={poblacion}
                   onChange={(e) => setPoblacion(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -319,37 +343,38 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Provincia *
+                  <span className="flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5 text-blue-500" />
+                    País *
+                  </span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej. Madrid"
-                  value={provincia}
-                  onChange={(e) => setProvincia(e.target.value)}
+                  placeholder="Alemania, España, México..."
+                  value={pais}
+                  onChange={(e) => setPais(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errores.provincia ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
+                    errores.pais ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
                   }`}
                 />
-                {errores.provincia && <p className="text-xs text-rose-500 mt-1">{errores.provincia}</p>}
+                {errores.pais && <p className="text-xs text-rose-500 mt-1">{errores.pais}</p>}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Código Postal *
+                  Código Postal (CodPost)
                 </label>
                 <input
                   type="text"
-                  placeholder="28001"
+                  placeholder="12209"
                   value={codigoPostal}
                   onChange={(e) => setCodigoPostal(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errores.codigoPostal ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
-                  }`}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {errores.codigoPostal && <p className="text-xs text-rose-500 mt-1">{errores.codigoPostal}</p>}
               </div>
             </div>
 
+            {/* Comercial asignado */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                 Comercial Asignado por Defecto
@@ -368,6 +393,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
               </select>
             </div>
 
+            {/* Notas */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                 <span className="flex items-center gap-1">
@@ -377,7 +403,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
               </label>
               <textarea
                 rows={2}
-                placeholder="Datos de interés para las visitas, horarios preferentes, etc."
+                placeholder="Condiciones comerciales, horarios preferentes, etc."
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -391,7 +417,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                   type="button"
                   onClick={() => setShowConfirmDelete(true)}
                   disabled={submitting}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   Eliminar Cliente
@@ -403,14 +429,14 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/30 active:scale-95 transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/30 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'Guardando...' : clienteParaEditar ? 'Guardar Cambios' : 'Crear Cliente'}
                 </button>
@@ -425,7 +451,7 @@ export const ClienteModal: React.FC<ClienteModalProps> = ({
         onClose={() => setShowConfirmDelete(false)}
         onConfirm={handleEliminar}
         title="¿Eliminar cliente?"
-        message={`¿Estás seguro de que deseas eliminar a "${clienteParaEditar?.nombre_empresa}"? También se eliminará todo su historial de visitas asociadas.`}
+        message={`¿Estás seguro de que deseas eliminar a "${clienteParaEditar?.nombre_empresa}" (${clienteParaEditar?.codigo})? Esta acción se sincronizará con Supabase.`}
         confirmText="Sí, eliminar cliente"
         cancelText="Conservar"
       />

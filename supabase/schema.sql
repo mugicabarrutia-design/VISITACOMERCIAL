@@ -1,19 +1,15 @@
 -- ====================================================================
--- ESQUEMA COMPLETO PARA SUPABASE: GESTIÓN DE VISITAS COMERCIALES
+-- ESQUEMA SEGURO PARA SUPABASE: GESTIÓN COMERCIAL COMPLETA
+-- ====================================================================
+-- Conserva las tablas importadas: clientes, articulos, ventas
+-- Crea las tablas de comerciales y visitas
+-- Habilita políticas de seguridad RLS permisivas para el rol anon (didáctico)
 -- ====================================================================
 
--- 1. Habilitar extensión para UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Limpieza previa (opcional si se desea resetear)
-DROP TABLE IF EXISTS visitas CASCADE;
-DROP TABLE IF EXISTS clientes CASCADE;
-DROP TABLE IF EXISTS comerciales CASCADE;
-
--- --------------------------------------------------------------------
--- 3. Tabla: comerciales
--- --------------------------------------------------------------------
-CREATE TABLE comerciales (
+-- 1. TABLA: comerciales (si no existe)
+CREATE TABLE IF NOT EXISTS comerciales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre VARCHAR(100) NOT NULL,
     apellidos VARCHAR(150) NOT NULL,
@@ -25,32 +21,21 @@ CREATE TABLE comerciales (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- --------------------------------------------------------------------
--- 4. Tabla: clientes
--- --------------------------------------------------------------------
-CREATE TABLE clientes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre_empresa VARCHAR(200) NOT NULL,
-    cif VARCHAR(50) NOT NULL,
-    persona_contacto VARCHAR(150) NOT NULL,
-    telefono VARCHAR(50) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    direccion TEXT NOT NULL,
-    poblacion VARCHAR(100) NOT NULL,
-    provincia VARCHAR(100) NOT NULL,
-    codigo_postal VARCHAR(20) NOT NULL,
-    sector VARCHAR(100) NOT NULL,
-    notas TEXT,
-    comercial_asignado_id UUID REFERENCES comerciales(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- 2. Asegurar que clientes tiene columna comercial_asignado_id (opcional)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'clientes' AND column_name = 'comercial_asignado_id'
+    ) THEN
+        ALTER TABLE clientes ADD COLUMN comercial_asignado_id UUID REFERENCES comerciales(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
--- --------------------------------------------------------------------
--- 5. Tabla: visitas
--- --------------------------------------------------------------------
-CREATE TABLE visitas (
+-- 3. TABLA: visitas (vinculada a clientes.codigo)
+CREATE TABLE IF NOT EXISTS visitas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    cliente_id UUID NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    cliente_id TEXT NOT NULL,
     comercial_id UUID NOT NULL REFERENCES comerciales(id) ON DELETE CASCADE,
     fecha_inicio TIMESTAMPTZ NOT NULL,
     fecha_fin TIMESTAMPTZ NOT NULL,
@@ -65,105 +50,90 @@ CREATE TABLE visitas (
     CONSTRAINT check_visita_fechas CHECK (fecha_fin >= fecha_inicio)
 );
 
--- --------------------------------------------------------------------
--- 6. Índices para acelerar búsquedas y filtros
--- --------------------------------------------------------------------
-CREATE INDEX idx_clientes_comercial ON clientes(comercial_asignado_id);
-CREATE INDEX idx_visitas_cliente ON visitas(cliente_id);
-CREATE INDEX idx_visitas_comercial ON visitas(comercial_id);
-CREATE INDEX idx_visitas_fechas ON visitas(fecha_inicio, fecha_fin);
-CREATE INDEX idx_visitas_estado ON visitas(estado);
-CREATE INDEX idx_visitas_tipo ON visitas(tipo);
+-- Índices de rendimiento
+CREATE INDEX IF NOT EXISTS idx_visitas_cliente ON visitas(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_visitas_comercial ON visitas(comercial_id);
+CREATE INDEX IF NOT EXISTS idx_visitas_fechas ON visitas(fecha_inicio, fecha_fin);
 
--- --------------------------------------------------------------------
--- 7. Seguridad: Row Level Security (RLS) permisiva para rol 'anon'
--- Proyecto didáctico con acceso público directo desde cliente Supabase JS
--- --------------------------------------------------------------------
-ALTER TABLE comerciales ENABLE ROW LEVEL SECURITY;
+-- ====================================================================
+-- HABILITAR RLS Y POLÍTICAS PERMISIVAS PARA ROL ANON (CLIENTE WEB)
+-- ====================================================================
 ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE articulos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comerciales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visitas ENABLE ROW LEVEL SECURITY;
 
--- Políticas para 'comerciales'
-CREATE POLICY "Permissive anon read/write comerciales"
-    ON comerciales FOR ALL
-    TO anon, authenticated
-    USING (true)
-    WITH CHECK (true);
+-- Clientes
+DROP POLICY IF EXISTS "Anon clientes all" ON clientes;
+CREATE POLICY "Anon clientes all" ON clientes FOR ALL TO anon USING (true) WITH CHECK (true);
 
--- Políticas para 'clientes'
-CREATE POLICY "Permissive anon read/write clientes"
-    ON clientes FOR ALL
-    TO anon, authenticated
-    USING (true)
-    WITH CHECK (true);
+-- Artículos
+DROP POLICY IF EXISTS "Anon articulos all" ON articulos;
+CREATE POLICY "Anon articulos all" ON articulos FOR ALL TO anon USING (true) WITH CHECK (true);
 
--- Políticas para 'visitas'
-CREATE POLICY "Permissive anon read/write visitas"
-    ON visitas FOR ALL
-    TO anon, authenticated
-    USING (true)
-    WITH CHECK (true);
+-- Ventas
+DROP POLICY IF EXISTS "Anon ventas all" ON ventas;
+CREATE POLICY "Anon ventas all" ON ventas FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Comerciales
+DROP POLICY IF EXISTS "Anon comerciales all" ON comerciales;
+CREATE POLICY "Anon comerciales all" ON comerciales FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Visitas
+DROP POLICY IF EXISTS "Anon visitas all" ON visitas;
+CREATE POLICY "Anon visitas all" ON visitas FOR ALL TO anon USING (true) WITH CHECK (true);
 
 -- ====================================================================
--- 8. DATOS DE EJEMPLO (3 comerciales, 8 clientes, 10 visitas en mes actual)
--- Usamos CURRENT_DATE para que las visitas siempre caigan en el mes en curso
+-- DATOS DE EJEMPLO PARA COMERCIALES Y VISITAS
 -- ====================================================================
+INSERT INTO comerciales (id, nombre, apellidos, email, telefono, zona, color, activo)
+VALUES
+    ('e1111111-1111-1111-1111-111111111111', 'Carlos', 'Gómez Ruiz', 'carlos.gomez@empresa.es', '+34 611 223 344', 'Zona Centro (Madrid)', '#2563EB', true),
+    ('e2222222-2222-2222-2222-222222222222', 'Laura', 'Martínez Soler', 'laura.martinez@empresa.es', '+34 622 334 455', 'Zona Noreste (Cataluña)', '#10B981', true),
+    ('e3333333-3333-3333-3333-333333333333', 'Javier', 'Fernández Vega', 'javier.fernandez@empresa.es', '+34 633 445 566', 'Zona Sur (Andalucía)', '#F59E0B', true)
+ON CONFLICT (id) DO UPDATE SET 
+    nombre = EXCLUDED.nombre,
+    apellidos = EXCLUDED.apellidos,
+    zona = EXCLUDED.zona,
+    color = EXCLUDED.color;
 
--- Insertar 3 comerciales
-INSERT INTO comerciales (id, nombre, apellidos, email, telefono, zona, color, activo) VALUES
-('c1111111-1111-1111-1111-111111111111', 'Carlos', 'Mendoza Ruiz', 'carlos.mendoza@empresa.es', '+34 612 345 678', 'Madrid y Centro', '#2563EB', true),
-('c2222222-2222-2222-2222-222222222222', 'Laura', 'Sánchez Vidal', 'laura.sanchez@empresa.es', '+34 623 456 789', 'Cataluña y Levante', '#059669', true),
-('c3333333-3333-3333-3333-333333333333', 'Alejandro', 'Gómez Herrera', 'alejandro.gomez@empresa.es', '+34 634 567 890', 'Andalucía y Sur', '#D97706', true);
+-- Visitas de ejemplo repartidas en el mes actual vinculadas a clientes importados (c1, c10, c16, c23, c36, c45...)
+INSERT INTO visitas (id, comercial_id, cliente_id, fecha_inicio, fecha_fin, tipo, estado, objetivo, resultado, importe_estimado, proxima_accion, notas)
+VALUES
+    ('b1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', 'c1',
+     (CURRENT_DATE - INTERVAL '6 days' + TIME '09:30:00'), (CURRENT_DATE - INTERVAL '6 days' + TIME '11:00:00'),
+     'presentación', 'realizada', 'Presentación del nuevo catálogo de productos y condiciones comerciales', 'Reunión muy productiva con Maria Anders. Interés alto en la línea de bebidas.', 14500, 'Enviar propuesta formal de suministro antes de fin de mes', 'Visita presencial.'),
 
--- Insertar 8 clientes
-INSERT INTO clientes (id, nombre_empresa, cif, persona_contacto, telefono, email, direccion, poblacion, provincia, codigo_postal, sector, notas, comercial_asignado_id) VALUES
-('e1111111-1111-1111-1111-111111111111', 'InnovaTech Solutions S.L.', 'B87654321', 'Elena Morales (Directora IT)', '+34 914 556 789', 'contacto@innovatech.es', 'Paseo de la Castellana 140, Planta 6', 'Madrid', 'Madrid', '28046', 'Tecnología y Software', 'Interesados en renovar su infraestructura cloud y licencias corporativas.', 'c1111111-1111-1111-1111-111111111111'),
-('e2222222-2222-2222-2222-222222222222', 'Logística & Transportes del Sur', 'B91234567', 'Manuel Domínguez (Jefe de Flota)', '+34 954 112 233', 'logistica@transur.com', 'Polígono Industrial La Isla, Parcela 14', 'Dos Hermanas', 'Sevilla', '41703', 'Transporte y Logística', 'Flota de 45 camiones. Buscan optimización de telemetría y combustible.', 'c3333333-3333-3333-3333-333333333333'),
-('e3333333-3333-3333-3333-333333333333', 'Farmacias Unidas Mediterráneo', 'A08761234', 'Dra. Montserrat Puig', '+34 932 778 899', 'compras@farmaciasunidas.cat', 'Avinguda Diagonal 405', 'Barcelona', 'Barcelona', '08008', 'Farmacéutico y Salud', 'Red de 18 boticas en el área metropolitana. Alta solvencia.', 'c2222222-2222-2222-2222-222222222222'),
-('e4444444-4444-4444-4444-444444444444', 'Distribuciones Alimentarias Norte', 'B48991200', 'Iker Bilbao (Director de Compras)', '+34 944 332 110', 'ibilbao@distrinorte.eus', 'Calle Gran Vía 28', 'Bilbao', 'Bizkaia', '48009', 'Alimentación y Bebidas', 'Distribución mayorista a hostelería. Negociando contrato anual.', 'c1111111-1111-1111-1111-111111111111'),
-('e5555555-5555-5555-5555-555555555555', 'Grupo Gastronómico Ibérico', 'B82341999', 'Lucía Navarro (Gerente de Operaciones)', '+34 915 667 890', 'gerencia@grupoibericogastronomia.com', 'Calle Alcalá 92', 'Madrid', 'Madrid', '28009', 'Hostelería y Restauración', 'Cadena de 6 restaurantes gourmet en Madrid y Valencia.', 'c1111111-1111-1111-1111-111111111111'),
-('e6666666-6666-6666-6666-666666666666', 'Moda & Retail Ibérica S.A.', 'A46112233', 'Javier Valls (Director Comercial)', '+34 963 889 001', 'j.valls@modaretail.es', 'Calle Colón 15', 'Valencia', 'Valencia', '46004', 'Moda y Textil', 'Expansión a tiendas físicas en centros comerciales.', 'c2222222-2222-2222-2222-222222222222'),
-('e7777777-7777-7777-7777-777777777777', 'Construcciones y Obras Valles', 'B29556778', 'Antonio Valles (CEO)', '+34 952 445 667', 'contacto@obrasvalles.es', 'Avenida de Andalucía 54', 'Málaga', 'Málaga', '29007', 'Construcción e Ingeniería', 'Desarrollo de complejos residenciales en la Costa del Sol.', 'c3333333-3333-3333-3333-333333333333'),
-('e8888888-8888-8888-8888-888888888888', 'Energías Renovables del Sol', 'B14889900', 'Carmen Roldán (Directora Técnica)', '+34 957 223 344', 'croldan@renovablesdelsol.es', 'Parque Tecnológico Rabanales 21', 'Córdoba', 'Córdoba', '14014', 'Energía y Medio Ambiente', 'Proyectos fotovoltaicos industriales. Alta previsión de inversión.', 'c3333333-3333-3333-3333-333333333333');
+    ('b2222222-2222-2222-2222-222222222222', 'e1111111-1111-1111-1111-111111111111', 'c23',
+     (CURRENT_DATE - INTERVAL '3 days' + TIME '11:30:00'), (CURRENT_DATE - INTERVAL '3 days' + TIME '13:00:00'),
+     'seguimiento', 'realizada', 'Revisión técnica de suministros para la sede de Alcobendas', 'El cliente dio el visto bueno a los plazos propuestos.', 8200, 'Enviar borrador de contrato para firma', 'Reunión en oficinas centrales de FISSA.'),
 
--- Insertar 10 visitas dinámicamente repartidas en el mes actual
-INSERT INTO visitas (id, cliente_id, comercial_id, fecha_inicio, fecha_fin, tipo, estado, objetivo, resultado, importe_estimado, proxima_accion, notas) VALUES
-('v1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 
- (CURRENT_DATE - INTERVAL '3 days' + TIME '10:00:00'), (CURRENT_DATE - INTERVAL '3 days' + TIME '11:30:00'),
- 'presentación', 'realizada', 'Presentación de la nueva plataforma de gestión en la nube', 'Excelente acogida por parte del equipo IT. Solicitan demo personalizada.', 12500, 'Enviar propuesta económica detallada y preparar entorno de pruebas', 'Reunión en su sede central. Estuvieron presentes 4 responsables técnicos.'),
+    ('b3333333-3333-3333-3333-333333333333', 'e2222222-2222-2222-2222-222222222222', 'c16',
+     (CURRENT_DATE - INTERVAL '1 days' + TIME '16:00:00'), (CURRENT_DATE - INTERVAL '1 days' + TIME '17:30:00'),
+     'incidencia', 'realizada', 'Resolución de retraso en la entrega del pedido semanal', 'Se acordó compensar con 5% de descuento en el próximo pedido.', 0, 'Comprobar llegada del nuevo envío con la agencia de transportes', 'Incidencia resuelta satisfactoriamente.'),
 
-('v2222222-2222-2222-2222-222222222222', 'e2222222-2222-2222-2222-222222222222', 'c3333333-3333-3333-3333-333333333333', 
- (CURRENT_DATE - INTERVAL '1 day' + TIME '12:00:00'), (CURRENT_DATE - INTERVAL '1 day' + TIME '13:00:00'),
- 'seguimiento', 'realizada', 'Revisar métricas de ahorro de combustible del piloto', 'Ahorro confirmado del 8.4%. Muy satisfechos con el reporte.', 28000, 'Agendar reunión con el director financiero para firma de contrato', 'Manuel confirma que el comité dará el visto bueno el próximo lunes.'),
+    ('b4444444-4444-4444-4444-444444444444', 'e1111111-1111-1111-1111-111111111111', 'c1',
+     (CURRENT_DATE + TIME '10:00:00'), (CURRENT_DATE + TIME '11:30:00'),
+     'cierre', 'programada', 'Negociación y firma de renovación del acuerdo anual de distribución', NULL, 35000, 'Llevar 2 copias físicas del contrato preparadas para firma', 'Visita prioritaria de hoy.'),
 
-('v3333333-3333-3333-3333-333333333333', 'e3333333-3333-3333-3333-333333333333', 'c2222222-2222-2222-2222-222222222222', 
- (CURRENT_DATE + TIME '09:30:00'), (CURRENT_DATE + TIME '11:30:00'),
- 'cierre', 'programada', 'Firma definitiva del acuerdo marco para las 18 farmacias', NULL, 45000, 'Llevar copias impresas y validar aval bancario', 'Punto clave: confirmar entrega de los primeros lotes en 15 días.'),
+    ('b5555555-5555-5555-5555-555555555555', 'e3333333-3333-3333-3333-333333333333', 'c36',
+     (CURRENT_DATE + TIME '16:00:00'), (CURRENT_DATE + TIME '17:30:00'),
+     'seguimiento', 'programada', 'Demostración de los nuevos artículos añadidos al catálogo', NULL, 12000, 'Preparar muestras físicas del catálogo', 'Reunión presencial con la dirección de compras.'),
 
-('v4444444-4444-4444-4444-444444444444', 'e4444444-4444-4444-4444-444444444444', 'c1111111-1111-1111-1111-111111111111', 
- (CURRENT_DATE + TIME '16:00:00'), (CURRENT_DATE + TIME '17:30:00'),
- 'seguimiento', 'programada', 'Ajustar condiciones logísticas de entregas nocturnas', NULL, 18500, 'Revisar con almacén la ruta norteña', 'Cliente exige trazabilidad de temperatura en tiempo real.'),
+    ('b6666666-6666-6666-6666-666666666666', 'e2222222-2222-2222-2222-222222222222', 'c10',
+     (CURRENT_DATE + INTERVAL '2 days' + TIME '09:00:00'), (CURRENT_DATE + INTERVAL '2 days' + TIME '10:30:00'),
+     'presentación', 'programada', 'Presentación de tarifas especiales por volumen para el nuevo trimestre', NULL, 22000, 'Enviar dossier previo por email', 'Reunión con Elizabeth Lincoln.'),
 
-('v5555555-5555-5555-5555-555555555555', 'e5555555-5555-5555-5555-555555555555', 'c1111111-1111-1111-1111-111111111111', 
- (CURRENT_DATE + INTERVAL '1 day' + TIME '11:00:00'), (CURRENT_DATE + INTERVAL '1 day' + TIME '12:30:00'),
- 'incidencia', 'programada', 'Resolver retraso en la entrega de suministros del local en Castellana', NULL, 8900, 'Ofrecer bonificación del 5% en la siguiente factura', 'Prioridad alta para mantener la buena relación con Lucía.'),
+    ('b7777777-7777-7777-7777-777777777777', 'e3333333-3333-3333-3333-333333333333', 'c45',
+     (CURRENT_DATE + INTERVAL '4 days' + TIME '11:00:00'), (CURRENT_DATE + INTERVAL '4 days' + TIME '12:30:00'),
+     'cierre', 'programada', 'Firma de pedido mayorista según historial de compras', NULL, 18500, 'Emitir factura proforma previa', 'Oportunidad de gran volumen.'),
 
-('v6666666-6666-6666-6666-666666666666', 'e6666666-6666-6666-6666-666666666666', 'c2222222-2222-2222-2222-222222222222', 
- (CURRENT_DATE + INTERVAL '2 days' + TIME '10:00:00'), (CURRENT_DATE + INTERVAL '2 days' + TIME '12:00:00'),
- 'presentación', 'programada', 'Demostración de terminales TPV inteligentes y fidelización', NULL, 34000, 'Preparar casos de éxito en el sector retail textil', 'Tienen interés en integrarlo con su ERP actual.'),
+    ('b8888888-8888-8888-8888-888888888888', 'e1111111-1111-1111-1111-111111111111', 'c24',
+     (CURRENT_DATE + INTERVAL '7 days' + TIME '12:00:00'), (CURRENT_DATE + INTERVAL '7 days' + TIME '13:30:00'),
+     'postventa', 'programada', 'Seguimiento de satisfacción del servicio de entrega', NULL, 6500, 'Entregar encuesta de calidad de servicio', 'Revisión periódica.'),
 
-('v7777777-7777-7777-7777-777777777777', 'e7777777-7777-7777-7777-777777777777', 'c3333333-3333-3333-3333-333333333333', 
- (CURRENT_DATE + INTERVAL '3 days' + TIME '16:30:00'), (CURRENT_DATE + INTERVAL '3 days' + TIME '18:00:00'),
- 'postventa', 'programada', 'Comprobar satisfacción con la maquinaria entregada el mes anterior', NULL, 0, 'Entregar manual de mantenimiento preventivo', 'Revisión técnica de cortesía.'),
-
-('v8888888-8888-8888-8888-888888888888', 'e8888888-8888-8888-8888-888888888888', 'c3333333-3333-3333-3333-333333333333', 
- (CURRENT_DATE + INTERVAL '5 days' + TIME '09:00:00'), (CURRENT_DATE + INTERVAL '5 days' + TIME '11:00:00'),
- 'cierre', 'programada', 'Cierre de licitación para la planta solar en Antequera', NULL, 75000, 'Formalizar póliza de garantía', 'Oportunidad estratégica de gran volumen.'),
-
-('v9999999-9999-9999-9999-999999999999', 'e1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 
- (CURRENT_DATE + INTERVAL '7 days' + TIME '12:00:00'), (CURRENT_DATE + INTERVAL '7 days' + TIME '13:30:00'),
- 'seguimiento', 'aplazada', 'Seguimiento de la propuesta técnica enviada', 'El cliente pidió aplazar 1 semana por viaje de Elena Morales a Berlín.', 12500, 'Contactar a la vuelta de su viaje el día 20', 'Reagendada por incompatibilidad de agenda.'),
-
-('vaaaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'e3333333-3333-3333-3333-333333333333', 'c2222222-2222-2222-2222-222222222222', 
- (CURRENT_DATE + INTERVAL '10 days' + TIME '15:00:00'), (CURRENT_DATE + INTERVAL '10 days' + TIME '17:00:00'),
- 'postventa', 'programada', 'Evaluación del primer mes de servicio y formación de personal', NULL, 6000, 'Enviar encuesta de calidad a los directores de farmacia', 'Se realizará por videoconferencia si la dra. Puig no puede presencial.');
+    ('b9999999-9999-9999-9999-999999999999', 'e2222222-2222-2222-2222-222222222222', 'c12',
+     (CURRENT_DATE + INTERVAL '10 days' + TIME '15:00:00'), (CURRENT_DATE + INTERVAL '10 days' + TIME '16:30:00'),
+     'seguimiento', 'programada', 'Presentación del catálogo de condimentos y repostería', NULL, 9400, 'Confirmar agenda el día previo', 'Reunión con Patricio Simpson.')
+ON CONFLICT (id) DO NOTHING;

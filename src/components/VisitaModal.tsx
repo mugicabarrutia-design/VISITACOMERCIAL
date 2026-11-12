@@ -274,7 +274,7 @@ export const VisitaModal: React.FC<VisitaModalProps> = ({
                   <option value="">Selecciona un cliente...</option>
                   {clientes.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre_empresa} ({c.poblacion})
+                      {c.nombre_empresa} [{c.codigo}] • {c.ciudad || c.poblacion || c.pais}
                     </option>
                   ))}
                 </select>

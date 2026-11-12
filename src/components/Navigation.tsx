@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Calendar, CheckSquare, Users, Briefcase, Plus, Database, Menu, X, Sparkles } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Briefcase, Plus, Database, Menu, X, Sparkles, Package, ShoppingCart } from 'lucide-react';
 
-export type TabKey = 'calendario' | 'visitas' | 'clientes' | 'comerciales';
+export type TabKey = 'calendario' | 'visitas' | 'clientes' | 'articulos' | 'ventas' | 'comerciales';
 
 interface NavigationProps {
   currentTab: TabKey;
@@ -17,7 +17,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onOpenNuevaVisita,
   onOpenConfigSupabase,
 }) => {
-  const { isLiveSupabase, visitas, clientes, comerciales } = useData();
+  const { isLiveSupabase, visitas, clientes, articulos, ventas, comerciales } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -38,6 +38,18 @@ export const Navigation: React.FC<NavigationProps> = ({
       label: 'Clientes',
       icon: Users,
       badge: clientes.length,
+    },
+    {
+      key: 'articulos' as TabKey,
+      label: 'Artículos',
+      icon: Package,
+      badge: articulos.length,
+    },
+    {
+      key: 'ventas' as TabKey,
+      label: 'Ventas',
+      icon: ShoppingCart,
+      badge: ventas.length,
     },
     {
       key: 'comerciales' as TabKey,

@@ -198,7 +198,7 @@ export const generateInitialVisitas = (): Visita[] => {
 
   return [
     {
-      id: 'v1111111-1111-1111-1111-111111111111',
+      id: 'b1111111-1111-1111-1111-111111111111',
       cliente_id: 'e1111111-1111-1111-1111-111111111111',
       comercial_id: 'c1111111-1111-1111-1111-111111111111',
       fecha_inicio: d1.inicio,
@@ -213,7 +213,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v2222222-2222-2222-2222-222222222222',
+      id: 'b2222222-2222-2222-2222-222222222222',
       cliente_id: 'e2222222-2222-2222-2222-222222222222',
       comercial_id: 'c3333333-3333-3333-3333-333333333333',
       fecha_inicio: d2.inicio,
@@ -228,7 +228,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v3333333-3333-3333-3333-333333333333',
+      id: 'b3333333-3333-3333-3333-333333333333',
       cliente_id: 'e3333333-3333-3333-3333-333333333333',
       comercial_id: 'c2222222-2222-2222-2222-222222222222',
       fecha_inicio: d3.inicio,
@@ -243,7 +243,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v4444444-4444-4444-4444-444444444444',
+      id: 'b4444444-4444-4444-4444-444444444444',
       cliente_id: 'e4444444-4444-4444-4444-444444444444',
       comercial_id: 'c1111111-1111-1111-1111-111111111111',
       fecha_inicio: d4.inicio,
@@ -258,7 +258,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v5555555-5555-5555-5555-555555555555',
+      id: 'b5555555-5555-5555-5555-555555555555',
       cliente_id: 'e5555555-5555-5555-5555-555555555555',
       comercial_id: 'c1111111-1111-1111-1111-111111111111',
       fecha_inicio: d5.inicio,
@@ -273,7 +273,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v6666666-6666-6666-6666-666666666666',
+      id: 'b6666666-6666-6666-6666-666666666666',
       cliente_id: 'e6666666-6666-6666-6666-666666666666',
       comercial_id: 'c2222222-2222-2222-2222-222222222222',
       fecha_inicio: d6.inicio,
@@ -288,7 +288,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v7777777-7777-7777-7777-777777777777',
+      id: 'b7777777-7777-7777-7777-777777777777',
       cliente_id: 'e7777777-7777-7777-7777-777777777777',
       comercial_id: 'c3333333-3333-3333-3333-333333333333',
       fecha_inicio: d7.inicio,
@@ -303,7 +303,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v8888888-8888-8888-8888-888888888888',
+      id: 'b8888888-8888-8888-8888-888888888888',
       cliente_id: 'e8888888-8888-8888-8888-888888888888',
       comercial_id: 'c3333333-3333-3333-3333-333333333333',
       fecha_inicio: d8.inicio,
@@ -318,7 +318,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'v9999999-9999-9999-9999-999999999999',
+      id: 'b9999999-9999-9999-9999-999999999999',
       cliente_id: 'e1111111-1111-1111-1111-111111111111',
       comercial_id: 'c1111111-1111-1111-1111-111111111111',
       fecha_inicio: d9.inicio,
@@ -333,7 +333,7 @@ export const generateInitialVisitas = (): Visita[] => {
       created_at: new Date().toISOString(),
     },
     {
-      id: 'vaaaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      id: 'baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       cliente_id: 'e3333333-3333-3333-3333-333333333333',
       comercial_id: 'c2222222-2222-2222-2222-222222222222',
       fecha_inicio: d10.inicio,
