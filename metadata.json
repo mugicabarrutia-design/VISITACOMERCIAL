@@ -1,0 +1,6 @@
+{
+  "name": "Gestión de Visitas Comerciales",
+  "description": "Aplicación integral para la planificación y seguimiento de visitas de comerciales con calendario interactivo, gestión de clientes y métricas de ventas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
